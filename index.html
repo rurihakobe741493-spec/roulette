@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ルーレットアプリ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- TOPページ -->
+  <div id="top-page">
+    <h1>ルーレットアプリ</h1>
+    <button onclick="showModeSelect()">スタート</button>
+  </div>
+
+<!-- モード選択画面 -->
+  <div id="mode-select" class="page hidden">
+    <h2>モードを選択</h2>
+    <div class="mode-buttons">
+      <button onclick="startBasicMode()">ベーシック</button>
+      <button onclick="startOmikujiMode()">おみくじ</button>
+      <button onclick="showCustomMode()">カスタム（重み付け）</button>
+      <button onclick="showOrderMode()">順番決め</button>
+    </div>
+  </div>
+
+<!-- カスタムモード（重み付け） -->
+  <div id="custom-mode" class="page hidden">
+    <h2>カスタムルーレット（重み付け）</h2>
+    
+    <div class="input-section">
+      <label>タイトル:</label>
+      <input type="text" id="custom-title" placeholder="今日の晩ごはん">
+    </div>
+    
+    <div class="input-section">
+      <label>項目名:</label>
+      <input type="text" id="item-name" placeholder="カレー">
+      
+      <label>重み（確率）:</label>
+      <input type="number" id="item-weight" value="10" min="1">
+      
+      <button onclick="addCustomItemWeighted()">追加</button>
+    </div>
+
+    <div class="items-list">
+      <h3>追加済み項目:</h3>
+      <div id="custom-items-list"></div>
+      <div id="total-weight">合計: 0</div>
+    </div>
+    
+    <div class="action-buttons">
+      <button onclick="startCustomWeightedRoulette()">ルーレット開始</button>
+      <button onclick="saveCustomRoulette()">設定を保存</button>
+    </div>
+    
+    <div class="saved-roulettes">
+      <h3>保存済みルーレット:</h3>
+      <div id="saved-list"></div>
+    </div>
+  </div>
+
+<!-- ルーレット画面 -->
+  <div id="roulette-page" class="page hidden">
+    <h2 id="roulette-title">ルーレット</h2>
+    
+    <div id="roulette-container">
+      <canvas id="roulette-canvas" width="400" height="400"></canvas>
+    </div>
+    
+    <button id="spin-button" onclick="spinRoulette()">回す！</button>
+    
+    <div id="result" class="hidden">
+      <h2>結果:</h2>
+      <div id="result-text"></div>
+    </div>
+    
+    <button onclick="backToModeSelect()">モード選択に戻る</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
