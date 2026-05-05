@@ -23,6 +23,7 @@
       <button onclick="startOmikujiMode()">おみくじ</button>
       <button onclick="showCustomMode()">カスタム（重み付け）</button>
       <button onclick="showOrderMode()">順番決め</button>
+      <button onclick="backToTop()">TOPに戻る</button>
     </div>
   </div>
 
@@ -54,6 +55,7 @@
     <div class="action-buttons">
       <button onclick="startCustomWeightedRoulette()">ルーレット開始</button>
       <button onclick="saveCustomRoulette()">設定を保存</button>
+      <button onclick="backToModeSelect()">モード選択に戻る</button>
     </div>
     
     <div class="saved-roulettes">
@@ -61,9 +63,6 @@
       <div id="saved-list"></div>
     </div>
 
-    <div style="margin-top: 20px; text-align: center;">
-      <button onclick="backToModeSelect()">モード選択に戻る</button>
-    </div>
   </div>
 
 <!-- ルーレット画面 -->
@@ -77,13 +76,12 @@
     </div>
     
     <button id="spin-button" onclick="spinRoulette()">回す！</button>
+    <button onclick="backToModeSelect()">モード選択に戻る</button>
     
     <div id="result" class="hidden">
       <h2>結果:</h2>
       <div id="result-text"></div>
     </div>
-    
-    <button onclick="backToModeSelect()">モード選択に戻る</button>
   </div>
 
   <script src="script.js"></script>

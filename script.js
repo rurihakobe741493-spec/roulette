@@ -28,6 +28,14 @@ function backToModeSelect() {
   document.getElementById('result').classList.add('hidden');
 }
 
+function backToTop() {
+  showPage('top-page');
+  // リセット
+  customWeightedItems = [];
+  currentItems = [];
+  document.getElementById('result').classList.add('hidden');
+}
+
 // カスタムモード：項目追加
 function addCustomItemWeighted() {
   const itemName = document.getElementById('item-name').value.trim();
