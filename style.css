@@ -257,14 +257,27 @@ button:disabled {
   text-align: center;
 }
 
+/* ✅ 追加: ルーレットコンテナとポインタ */
 #roulette-container {
+  position: relative;
   margin: 30px auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: inline-block;
+}
+
+#roulette-pointer {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  color: #e74c3c;
+  z-index: 10;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  line-height: 1;
 }
 
 #roulette-canvas {
+  display: block;
   border: 3px solid #667eea;
   border-radius: 50%;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -374,20 +387,6 @@ button:disabled {
   background: #764ba2;
 }
 
-/* アニメーション */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.spinning {
-  animation: spin 0.5s linear infinite;
-}
-
 /* ボタンスタイルバリエーション */
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -403,11 +402,6 @@ button:disabled {
 
 .btn-warning {
   background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
-}
-
-/* ホバーエフェクト */
-.page {
-  transition: transform 0.3s ease;
 }
 
 /* 入力フィールドのエラー表示 */
@@ -445,6 +439,11 @@ input.error {
   border-radius: 50%;
   border-top-color: white;
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* カードホバーエフェクト */

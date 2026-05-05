@@ -7,8 +7,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <!-- TOPページ -->
-  <div id="top-page">
+<!-- ✅ 修正①: class="page" を追加して showPage() で制御できるようにした -->
+  <div id="top-page" class="page">
     <h1>ルーレットアプリ</h1>
     <button onclick="showModeSelect()">スタート</button>
   </div>
@@ -58,13 +60,19 @@
       <h3>保存済みルーレット:</h3>
       <div id="saved-list"></div>
     </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+      <button onclick="backToModeSelect()">モード選択に戻る</button>
+    </div>
   </div>
 
 <!-- ルーレット画面 -->
   <div id="roulette-page" class="page hidden">
     <h2 id="roulette-title">ルーレット</h2>
     
+    <!-- ✅ 修正②: 矢印（ポインタ）をキャンバスの外側に配置 -->
     <div id="roulette-container">
+      <div id="roulette-pointer">▼</div>
       <canvas id="roulette-canvas" width="400" height="400"></canvas>
     </div>
     

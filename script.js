@@ -1,6 +1,7 @@
 // グローバル変数
 let customWeightedItems = [];
 let currentMode = '';
+let currentItems = []; // ✅ 修正③: スピン中もitemsを参照できるようグローバルで保持
 
 // ページ遷移
 function showPage(pageId) {
@@ -23,6 +24,7 @@ function backToModeSelect() {
   showPage('mode-select');
   // リセット
   customWeightedItems = [];
+  currentItems = [];
   document.getElementById('result').classList.add('hidden');
 }
 
@@ -110,7 +112,6 @@ function spinWeightedRoulette(items) {
     }
   }
   
-  // 念のため（通常ここには到達しない）
   return items[items.length - 1].item;
 }
 
@@ -122,41 +123,43 @@ function startCustomWeightedRoulette() {
   }
   
   currentMode = 'custom-weighted';
+  currentItems = customWeightedItems; // ✅ 修正③
   const title = document.getElementById('custom-title').value || 'カスタムルーレット';
   document.getElementById('roulette-title').textContent = title;
   
   showPage('roulette-page');
-  drawRouletteWheel(customWeightedItems);
+  drawRouletteWheel(currentItems, 0);
 }
 
-// ルーレットホイール描画（重み付け対応）
-function drawRouletteWheel(items) {
+// ✅ 修正④: angle引数を追加して、回転状態を描画できるようにした
+function drawRouletteWheel(items, angle) {
   const canvas = document.getElementById('roulette-canvas');
   const ctx = canvas.getContext('2d');
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
   const radius = 180;
   
-  // キャンバスをクリア
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // 合計 weight を計算
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
   
-  // 色の配列
   const colors = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
     '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
     '#F8B739', '#52B788', '#E76F51', '#2A9D8F'
   ];
   
+  // ✅ 修正⑤: angle分だけ回転させてから描画
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+  ctx.translate(-centerX, -centerY);
+
   let currentAngle = 0;
 
-  // 各セクションを描画
   items.forEach((item, index) => {
     const sliceAngle = (item.weight / totalWeight) * 2 * Math.PI;
     
-    // セクションを描画
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
@@ -167,30 +170,36 @@ function drawRouletteWheel(items) {
     ctx.lineWidth = 2;
     ctx.stroke();
     
-    // テキストを描画
+    // ✅ 修正⑥: テキストを放射状に配置（中心から外向きに回転）
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(currentAngle + sliceAngle / 2);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText(item.item, radius / 2, 5);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 15px Arial';
+    // テキストを縁取りして読みやすくする
+    ctx.strokeText(item.item, radius - 10, 5);
+    ctx.fillText(item.item, radius - 10, 5);
     ctx.restore();
 
     currentAngle += sliceAngle;
   });
+
+  ctx.restore();
   
-  // 中心の円を描画
+  // 中心の円
   ctx.beginPath();
-  ctx.arc(centerX, centerY, 10, 0, 2 * Math.PI);
+  ctx.arc(centerX, centerY, 12, 0, 2 * Math.PI);
   ctx.fillStyle = '#fff';
   ctx.fill();
-  ctx.strokeStyle = '#000';
+  ctx.strokeStyle = '#333';
   ctx.lineWidth = 2;
   ctx.stroke();
 }
 
-// ルーレットを回す
+// ✅ 修正⑦: アニメーション付きのルーレット回転
 let isSpinning = false;
 
 function spinRoulette() {
@@ -199,32 +208,70 @@ function spinRoulette() {
   isSpinning = true;
   document.getElementById('spin-button').disabled = true;
   document.getElementById('result').classList.add('hidden');
-  
-  let items;
-  if (currentMode === 'custom-weighted') {
-    items = customWeightedItems;
-  } else if (currentMode === 'omikuji') {
-    items = getOmikujiItems();
+
+  // ✅ 修正③: currentItemsを使うことでどのモードでも動く
+  const items = currentItems;
+
+  if (!items || items.length === 0) {
+    alert('項目がありません');
+    isSpinning = false;
+    document.getElementById('spin-button').disabled = false;
+    return;
   }
 
-  // アニメーション（簡易版）
-  let spinCount = 0;
-  const maxSpins = 20;
-  
-  const spinInterval = setInterval(() => {
-    spinCount++;
-    
-    if (spinCount >= maxSpins) {
-      clearInterval(spinInterval);
-      
-      // 最終結果を決定
-      const result = spinWeightedRoulette(items);
+  // ✅ 修正⑧: 重みに基づいて結果を先に決定し、その角度に止まるようにアニメーション
+  const result = spinWeightedRoulette(items);
+
+  // 結果のアイテムが全体のどの角度範囲にあるか計算
+  const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+  let targetAngleStart = 0;
+  let targetAngleEnd = 0;
+  let accumulated = 0;
+
+  for (let item of items) {
+    const sliceAngle = (item.weight / totalWeight) * 2 * Math.PI;
+    if (item.item === result) {
+      targetAngleStart = accumulated;
+      targetAngleEnd = accumulated + sliceAngle;
+      break;
+    }
+    accumulated += sliceAngle;
+  }
+
+  // ポインタ（▼）は上（-Math.PI/2）を指しているので、
+  // その位置に結果のスライス中央が来るようにホイールを回転させる
+  const targetSliceCenter = (targetAngleStart + targetAngleEnd) / 2;
+  const stopAngle = -targetSliceCenter - Math.PI / 2;
+
+  // 数回転分を加えてから止まるようにする
+  const totalRotation = stopAngle + 2 * Math.PI * (5 + Math.floor(Math.random() * 3));
+
+  // アニメーション
+  const duration = 4000; // 4秒
+  const startTime = performance.now();
+  const startAngle = 0;
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    // イーズアウト（だんだん遅くなる）
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const currentAngle = startAngle + totalRotation * eased;
+
+    drawRouletteWheel(items, currentAngle);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // アニメーション終了
       showResult(result);
-      
       isSpinning = false;
       document.getElementById('spin-button').disabled = false;
     }
-  }, 100);
+  }
+
+  requestAnimationFrame(animate);
 }
 
 // 結果表示
@@ -239,11 +286,13 @@ function showResult(result) {
 // おみくじモード開始
 function startOmikujiMode() {
   currentMode = 'omikuji';
+  currentItems = getOmikujiItems(); // ✅ 修正③
   document.getElementById('roulette-title').textContent = 'おみくじ';
   
   showPage('roulette-page');
-  drawRouletteWheel(getOmikujiItems());
+  drawRouletteWheel(currentItems, 0);
 }
+
 // おみくじ項目取得（重み付けプリセット）
 function getOmikujiItems() {
   return [
@@ -257,22 +306,21 @@ function getOmikujiItems() {
   ];
 }
 
-// ベーシックモード開始（重み付けなし）
+// ✅ 修正⑨: ベーシックモードも currentItems に代入するよう修正
 function startBasicMode() {
   currentMode = 'basic';
-  document.getElementById('roulette-title').textContent = 'ベーシックルーレット';
-  
-  // デフォルト項目（均等確率）
-  const basicItems = [
+  currentItems = [
     { item: '1', weight: 1 },
-    { item: '20', weight: 1 },
+    { item: '2', weight: 1 },
     { item: '3', weight: 1 },
     { item: '4', weight: 1 },
+    { item: '5', weight: 1 },
     { item: '6', weight: 1 }
   ];
   
+  document.getElementById('roulette-title').textContent = 'ベーシックルーレット';
   showPage('roulette-page');
-  drawRouletteWheel(basicItems);
+  drawRouletteWheel(currentItems, 0);
 }
 
 // 順番決めモード開始
@@ -288,18 +336,14 @@ function saveCustomRoulette() {
   }
   
   const title = document.getElementById('custom-title').value.trim() || '無題のルーレット';
-  
-  // 既存の保存データを取得
   const savedRoulettes = getSavedRoulettes();
   
-  // 新しいルーレットを追加
   savedRoulettes.push({
     id: Date.now(),
     title: title,
     items: [...customWeightedItems]
   });
   
-  // ローカルストレージに保存
   localStorage.setItem('savedRoulettes', JSON.stringify(savedRoulettes));
   
   alert(`「${title}」を保存しました`);
@@ -345,7 +389,6 @@ function loadRoulette(id) {
     return;
   }
   
-  // データを復元
   document.getElementById('custom-title').value = roulette.title;
   customWeightedItems = [...roulette.items];
   displayCustomItems();
@@ -370,6 +413,5 @@ function deleteSavedRoulette(id) {
 
 // 初期化処理
 document.addEventListener('DOMContentLoaded', () => {
-  // 初期表示
   showPage('top-page');
 });
