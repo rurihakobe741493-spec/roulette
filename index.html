@@ -21,7 +21,7 @@
     <div class="mode-buttons">
       <button onclick="startBasicMode()">ベーシック</button>
       <button onclick="startOmikujiMode()">おみくじ</button>
-      <button onclick="showCustomMode()">カスタム（重み付け）</button>
+      <button onclick="showCustomMode()">カスタム</button>
       <button onclick="showOrderMode()">順番決め</button>
       <button onclick="backToTop()">TOPに戻る</button>
     </div>
@@ -29,7 +29,7 @@
 
 <!-- カスタムモード（重み付け） -->
   <div id="custom-mode" class="page hidden">
-    <h2>カスタムルーレット（重み付け）</h2>
+    <h2>カスタムルーレット</h2>
     
     <div class="input-section">
       <label>タイトル:</label>
@@ -73,14 +73,16 @@
     <div id="roulette-container">
       <div id="roulette-pointer">▼</div>
       <canvas id="roulette-canvas" width="400" height="400"></canvas>
+
+      <div id="result" class="hidden">
+        <h2>結果:</h2>
+        <div id="result-text"></div>
+      </div>
     </div>
     
-    <button id="spin-button" onclick="spinRoulette()">回す！</button>
-    <button onclick="backToModeSelect()">モード選択に戻る</button>
-    
-    <div id="result" class="hidden">
-      <h2>結果:</h2>
-      <div id="result-text"></div>
+    <div class="roulette-buttons">
+      <button id="spin-button" onclick="spinRoulette()">回す！</button>
+      <button onclick="backToModeSelect()">モード選択に戻る</button>
     </div>
   </div>
 

@@ -296,21 +296,32 @@ button:disabled {
 
 /* 結果表示 */
 #result {
-  margin-top: 30px;
-  padding: 30px;
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  /* position: absolute で roulette-container の上に重ねる */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 中央揃え */
+
+  /* 背景を半透明の白に（opacityではなくrgbaを使う） */
+  background: rgba(255, 255, 255, 0.92);
+
   border-radius: 15px;
+  padding: 20px 30px;
   animation: fadeIn 0.5s ease;
+
+  /* ルーレットの円より少し小さい幅に収める */
+  width: 240px;
+  text-align: center;
+
+  /* 元の gradient background は削除 */
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -364,6 +375,21 @@ button:disabled {
   }
   
   .saved-roulette-item button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 500px) {
+  /* ルーレットボタンの基本（大きい画面：横並び） */
+  .roulette-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap; /* ← 収まらない時に自動で折り返す保険 */
+  }
+
+  .roulette-buttons button {
     width: 100%;
   }
 }
