@@ -230,6 +230,13 @@ button:disabled {
   flex: 1;
 }
 
+/* 日時情報追加 */
+.roulette-created {
+  color: #666;
+  margin-left: 15px;
+  font-size: 0.9rem;
+}
+
 .saved-roulette-item button {
   padding: 8px 15px;
   font-size: 0.9rem;
@@ -284,9 +291,10 @@ button:disabled {
 }
 
 #spin-button {
+  width: 100%; /* 横幅を100%にして親コンテナいっぱいに広げ、「回す！」ボタンのみが上段に来るようにする */
   font-size: 1.5rem;
   padding: 20px 60px;
-  margin: 20px;
+  margin-bottom: 10px; /* 左右のmarginをなくし、下だけ残す */
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 

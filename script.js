@@ -20,12 +20,38 @@ function showCustomMode() {
   displaySavedRoulettes();
 }
 
+function backToCustomMode() {
+  // カスタム画面に戻るだけでリセットはしない
+  // （項目を編集してまたルーレットを回せるようにするため）
+  showPage('custom-mode');
+}
+
 function backToModeSelect() {
+  // カスタムルーレット画面からの遷移かつ未保存の項目がある場合だけ確認する
+  const isFromCustomMode = !document.getElementById('custom-mode').classList.contains('hidden');
+  
+  if (isFromCustomMode && customWeightedItems.length > 0) {
+    // confirm()はOKでtrue、キャンセルでfalseを返す
+    const userConfirmed = confirm('保存していない内容がありますが、戻りますか？');
+    
+    if (!userConfirmed) {
+      return; // キャンセルされたら何もせずここで処理を終える
+    }
+  }
+
+  // OKが押された場合、または確認不要な場合はここまで進み、全モード共通のリセット処理を行う
   showPage('mode-select');
-  // リセット
+  // JavaScriptのデータをリセット（既存）
   customWeightedItems = [];
   currentItems = [];
   document.getElementById('result').classList.add('hidden');
+
+  // ✅ 追加：画面の表示もリセットしてデータと見た目を一致させる
+  document.getElementById('custom-title').value = '';
+  document.getElementById('item-name').value = '';
+  document.getElementById('item-weight').value = '10';
+  document.getElementById('custom-items-list').innerHTML = '<p>まだ項目がありません</p>';
+  document.getElementById('total-weight').textContent = '合計: 0';
 }
 
 function backToTop() {
@@ -52,6 +78,7 @@ function addCustomItemWeighted() {
   }
   
   customWeightedItems.push({
+    id: Date.now(), // ← 追加：ミリ秒単位の時刻を一意なIDとして使う
     item: itemName,
     weight: itemWeight
   });
@@ -83,7 +110,8 @@ function displayCustomItems() {
     itemDiv.innerHTML = `
       <span class="item-name">${item.item}</span>
       <span class="item-weight">- ${item.weight} (${percentage}%)</span>
-      <button onclick="removeItem(${index})">削除</button>
+      <button onclick="removeItem(${item.id})">削除</button>
+      <!-- ↑ index → item.id に変更 -->
     `;
     list.appendChild(itemDiv);
   });
@@ -92,8 +120,10 @@ function displayCustomItems() {
 }
 
 // 項目削除
-function removeItem(index) {
-  customWeightedItems.splice(index, 1);
+function removeItem(id) {
+  // filterは「条件に合う要素だけ残した新しい配列」を返す
+  // つまり「IDが一致しない要素だけ残す」＝「IDが一致する1つを取り除く」
+  customWeightedItems = customWeightedItems.filter(item => item.id !== id);
   displayCustomItems();
 }
 
@@ -135,6 +165,9 @@ function startCustomWeightedRoulette() {
   const title = document.getElementById('custom-title').value || 'カスタムルーレット';
   document.getElementById('roulette-title').textContent = title;
   
+  // ✅ 追加：カスタムモードのときだけボタンを表示する
+  document.getElementById('back-to-custom-button').classList.remove('hidden');
+
   showPage('roulette-page');
   drawRouletteWheel(currentItems, 0);
 }
@@ -297,6 +330,9 @@ function startOmikujiMode() {
   currentItems = getOmikujiItems(); // ✅ 修正③
   document.getElementById('roulette-title').textContent = 'おみくじ';
   
+  // ✅ 追加：カスタム以外ではボタンを隠す
+  document.getElementById('back-to-custom-button').classList.add('hidden');
+
   showPage('roulette-page');
   drawRouletteWheel(currentItems, 0);
 }
@@ -327,6 +363,10 @@ function startBasicMode() {
   ];
   
   document.getElementById('roulette-title').textContent = 'ベーシックルーレット';
+
+  // ✅ 追加：カスタム以外ではボタンを隠す
+  document.getElementById('back-to-custom-button').classList.add('hidden');
+
   showPage('roulette-page');
   drawRouletteWheel(currentItems, 0);
 }
@@ -346,15 +386,39 @@ function saveCustomRoulette() {
   const title = document.getElementById('custom-title').value.trim() || '無題のルーレット';
   const savedRoulettes = getSavedRoulettes();
   
-  savedRoulettes.push({
-    id: Date.now(),
-    title: title,
-    items: [...customWeightedItems]
-  });
-  
-  localStorage.setItem('savedRoulettes', JSON.stringify(savedRoulettes));
-  
-  alert(`「${title}」を保存しました`);
+  // 同じタイトルが既に存在するか探す
+  const existing = savedRoulettes.find(r => r.title === title);
+
+    if (existing) {
+    // 同じタイトルが見つかった場合、上書きするか確認
+    if (confirm(`「${title}」は既に存在します。上書きしますか？`)) {
+      // 上書き：IDはそのままにitemsだけ更新する
+      existing.items = [...customWeightedItems];
+      localStorage.setItem('savedRoulettes', JSON.stringify(savedRoulettes));
+      alert(`「${title}」を上書き保存しました`);
+
+    } else if (confirm(`「${title}」を新規作成しますか？`)) {
+      // 新規作成：pushで末尾に追加（従来通り）
+      savedRoulettes.push({
+        id: Date.now(),
+        title: title,
+        items: [...customWeightedItems]
+      });
+      localStorage.setItem('savedRoulettes', JSON.stringify(savedRoulettes));
+      alert(`「${title}」を新規作成しました`);
+    }
+    // どちらもキャンセルした場合は何もしない
+    } else {
+    // 同じタイトルが存在しない場合はそのまま新規保存
+    savedRoulettes.push({
+      id: Date.now(),
+      title: title,
+      items: [...customWeightedItems]
+    });
+    localStorage.setItem('savedRoulettes', JSON.stringify(savedRoulettes));
+    alert(`「${title}」を保存しました`);
+  }
+
   displaySavedRoulettes();
 }
 
@@ -376,10 +440,15 @@ function displaySavedRoulettes() {
   
   savedList.innerHTML = '';
   savedRoulettes.forEach(roulette => {
+    // Date.now()で保存したidは「ミリ秒単位の数値」なのでnew Date()に渡すと日時オブジェクトに変換できる
+    const createdAt = new Date(roulette.id).toLocaleString('ja-JP');
+    // ✅ roulette が使えるようになった後で計算すること！
+    // → 例：「2025/1/15 14:30:25」という文字列になる
     const rouletteDiv = document.createElement('div');
     rouletteDiv.className = 'saved-roulette-item';
     rouletteDiv.innerHTML = `
       <span class="roulette-title">${roulette.title}</span>
+      <span class="roulette-created">（保存日時: ${createdAt}）</span>
       <button onclick="loadRoulette(${roulette.id})">読込</button>
       <button onclick="deleteSavedRoulette(${roulette.id})">削除</button>
     `;
