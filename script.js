@@ -21,6 +21,9 @@ function showCustomMode() {
 }
 
 function backToCustomMode() {
+  // ✅ ここで result を hidden に戻す（次回開いたとき確実にきれいな状態にする）
+  document.getElementById('result').classList.add('hidden');
+  
   // カスタム画面に戻るだけでリセットはしない
   // （項目を編集してまたルーレットを回せるようにするため）
   showPage('custom-mode');
@@ -168,6 +171,9 @@ function startCustomWeightedRoulette() {
   // ✅ 追加：カスタムモードのときだけボタンを表示する
   document.getElementById('back-to-custom-button').classList.remove('hidden');
 
+  // ✅ 追加：前回の結果表示をリセット
+  document.getElementById('result').classList.add('hidden');
+  
   showPage('roulette-page');
   drawRouletteWheel(currentItems, 0);
 }
