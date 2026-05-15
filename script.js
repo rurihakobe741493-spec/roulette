@@ -573,7 +573,7 @@ function displayOrderMembers() {
           onchange="togglePreference(${member.id}, this.checked)">
         希望あり
       </label>
-      <input type="number" min="1"
+      <input type="number" min="1" max="${orderMembers.length}" // 修正①：最大値は現在の登壇者数に合わせる
         placeholder="枠番号"
         value="${member.preferredSlot || ''}"
         style="width:70px; padding:5px; border:2px solid #ddd; border-radius:5px; ${member.hasPreference ? '' : 'display:none;'}"
@@ -622,8 +622,8 @@ function startOrderRoulette() {
   // 希望ありメンバーのバリデーション
   const preferenceMembers = orderMembers.filter(m => m.hasPreference);
   for (const m of preferenceMembers) {
-    if (!m.preferredSlot || m.preferredSlot < 1 || m.preferredSlot > total) {
-      alert(`「${m.name}」の希望枠番号が無効です（1〜${total}の数値を入力してください）`);
+    if (!m.preferredSlot || m.preferredSlot < 1) { // 修正②：枠番号は上限を超えた入力を弾いてくれるので、アラートメッセージを簡略化
+      alert(`「${m.name}」の希望枠番号を入力してください`);
       return;
     }
   }
