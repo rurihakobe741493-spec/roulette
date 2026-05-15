@@ -92,6 +92,58 @@
     </div>
   </div>
 
+  <!-- 順番決めモード：メンバー入力画面 -->
+<div id="order-input-page" class="page hidden">
+  <h2>順番決め</h2>
+
+  <div class="input-section">
+    <label>登壇者名:</label>
+    <input type="text" id="order-member-name" placeholder="例：田中">
+    <button onclick="addOrderMember()">追加</button>
+  </div>
+
+  <div class="items-list">
+    <h3>登壇者一覧:</h3>
+    <div id="order-members-list"><p>まだ登壇者がいません</p></div>
+  </div>
+
+  <div class="action-buttons">
+    <button onclick="startOrderRoulette()">順番決め開始</button>
+    <button onclick="backToModeSelectFromOrder()">モード選択に戻る</button>
+  </div>
+</div>
+
+<!-- 順番決めモード：ルーレット画面 -->
+<div id="order-roulette-page" class="page hidden">
+  <h2 id="order-roulette-title">順番決め</h2>
+  <p id="order-current-member" style="font-size:1.2rem; margin-bottom:10px; color:#555;"></p>
+
+  <div id="order-roulette-container" style="position:relative; display:inline-block; margin: 20px auto;">
+    <div id="order-roulette-pointer" style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:2rem; color:#e74c3c; z-index:10;">▼</div>
+    <canvas id="order-roulette-canvas" width="400" height="400"
+      style="display:block; border:3px solid #667eea; border-radius:50%; box-shadow:0 10px 30px rgba(0,0,0,0.2);"></canvas>
+    <div id="order-result" class="hidden" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,255,255,0.92); border-radius:15px; padding:20px 30px; width:240px; text-align:center;">
+      <h2>結果:</h2>
+      <div id="order-result-text" style="font-size:3rem; font-weight:bold; color:#e74c3c;"></div>
+    </div>
+  </div>
+
+  <div class="roulette-buttons">
+    <button id="order-spin-button" onclick="spinOrderRoulette()">回す！</button>
+    <button id="order-next-button" class="hidden" onclick="nextOrderMember()">次の人へ</button>
+  </div>
+</div>
+
+<!-- 順番決めモード：結果画面 -->
+<div id="order-result-page" class="page hidden">
+  <h2>登壇順 決定！</h2>
+  <div id="order-final-result" style="margin: 20px 0;"></div>
+  <div class="action-buttons">
+    <button onclick="retryOrderMode()">やり直し</button>
+    <button onclick="backToModeSelect()">モード選択に戻る</button>
+  </div>
+</div>
+
   <script src="script.js"></script>
 </body>
 </html>

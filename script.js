@@ -377,11 +377,6 @@ function startBasicMode() {
   drawRouletteWheel(currentItems, 0);
 }
 
-// 順番決めモード開始
-function showOrderMode() {
-  alert('順番決めモードは別途実装予定です');
-}
-
 // ローカルストレージに保存
 function saveCustomRoulette() {
   if (customWeightedItems.length === 0) {
@@ -498,3 +493,358 @@ function deleteSavedRoulette(id) {
 document.addEventListener('DOMContentLoaded', () => {
   showPage('top-page');
 });
+
+// ===========================
+// 順番決めモード
+// ===========================
+
+// 登壇者データ（名前・希望枠）を格納する配列
+let orderMembers = [];
+// 希望なし組がルーレットで決める残り枠番号
+let remainingSlots = [];
+// 希望なし組のうちまだ回していない人のインデックス
+let currentOrderIndex = 0;
+// 確定した登壇順（枠番号 → 名前）
+let finalOrder = {};
+
+// メンバー入力画面を表示
+function showOrderMode() {
+  orderMembers = [];
+  remainingSlots = [];
+  currentOrderIndex = 0;
+  finalOrder = {};
+  showPage('order-input-page');
+  displayOrderMembers();
+}
+
+// モード選択に戻る（順番決めモード専用：未入力でも確認不要）
+function backToModeSelectFromOrder() {
+  orderMembers = [];
+  showPage('mode-select');
+}
+
+// 登壇者を追加する
+function addOrderMember() {
+  const nameInput = document.getElementById('order-member-name');
+  const name = nameInput.value.trim();
+
+  if (!name) {
+    alert('名前を入力してください');
+    return;
+  }
+
+  // 同じ名前の重複を防ぐ
+  if (orderMembers.some(m => m.name === name)) {
+    alert('同じ名前がすでに追加されています');
+    return;
+  }
+
+  orderMembers.push({
+    id: Date.now(),
+    name: name,
+    hasPreference: false, // 希望あり = true
+    preferredSlot: null   // 希望する枠番号
+  });
+
+  nameInput.value = '';
+  displayOrderMembers();
+}
+
+// 登壇者一覧を画面に表示する
+function displayOrderMembers() {
+  const list = document.getElementById('order-members-list');
+
+  if (orderMembers.length === 0) {
+    list.innerHTML = '<p>まだ登壇者がいません</p>';
+    return;
+  }
+
+  list.innerHTML = '';
+  orderMembers.forEach(member => {
+    const div = document.createElement('div');
+    div.className = 'item-row';
+
+    // 希望ありチェックを入れたときだけ枠番号入力欄を表示する
+    div.innerHTML = `
+      <span class="item-name">${member.name}</span>
+      <label style="margin: 0 10px; font-size:0.9rem;">
+        <input type="checkbox"
+          ${member.hasPreference ? 'checked' : ''}
+          onchange="togglePreference(${member.id}, this.checked)">
+        希望あり
+      </label>
+      <input type="number" min="1"
+        placeholder="枠番号"
+        value="${member.preferredSlot || ''}"
+        style="width:70px; padding:5px; border:2px solid #ddd; border-radius:5px; ${member.hasPreference ? '' : 'display:none;'}"
+        id="slot-input-${member.id}"
+        onchange="setPreferredSlot(${member.id}, this.value)">
+      <button onclick="removeOrderMember(${member.id})" style="background:#e74c3c;">削除</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// 希望ありチェックボックスの切り替え
+function togglePreference(id, checked) {
+  const member = orderMembers.find(m => m.id === id);
+  member.hasPreference = checked;
+
+  // チェックを外したら希望枠もリセット
+  if (!checked) member.preferredSlot = null;
+
+  // 枠番号入力欄の表示・非表示を切り替える
+  const slotInput = document.getElementById(`slot-input-${id}`);
+  slotInput.style.display = checked ? 'inline-block' : 'none';
+}
+
+// 希望枠番号をメンバーデータに反映する
+function setPreferredSlot(id, value) {
+  const member = orderMembers.find(m => m.id === id);
+  member.preferredSlot = parseInt(value);
+}
+
+// 登壇者を削除する
+function removeOrderMember(id) {
+  orderMembers = orderMembers.filter(m => m.id !== id);
+  displayOrderMembers();
+}
+
+// 順番決め開始前のバリデーションと初期化
+function startOrderRoulette() {
+  if (orderMembers.length === 0) {
+    alert('登壇者を追加してください');
+    return;
+  }
+
+  const total = orderMembers.length;
+
+  // 希望ありメンバーのバリデーション
+  const preferenceMembers = orderMembers.filter(m => m.hasPreference);
+  for (const m of preferenceMembers) {
+    if (!m.preferredSlot || m.preferredSlot < 1 || m.preferredSlot > total) {
+      alert(`「${m.name}」の希望枠番号が無効です（1〜${total}の数値を入力してください）`);
+      return;
+    }
+  }
+
+  // 同じ枠番号を複数人が希望していないかチェック
+  const slots = preferenceMembers.map(m => m.preferredSlot);
+  const hasDuplicate = slots.some((slot, i) => slots.indexOf(slot) !== i);
+  if (hasDuplicate) {
+    alert('同じ枠番号を複数人が希望しています。枠番号を修正してください');
+    return;
+  }
+
+  // 希望ありメンバーを finalOrder に先に確定させる
+  finalOrder = {};
+  preferenceMembers.forEach(m => {
+    finalOrder[m.preferredSlot] = m.name;
+  });
+
+  // 残り枠（希望で埋まっていない枠）を計算する
+  const allSlots = Array.from({ length: total }, (_, i) => i + 1); // [1, 2, 3, ...]
+  remainingSlots = allSlots.filter(slot => !finalOrder[slot]);
+
+  // 希望なし組（ルーレットを回す人たち）を抽出
+  currentOrderIndex = 0;
+
+  showOrderRoulettePage();
+}
+
+// ルーレット画面を準備して表示する
+function showOrderRoulettePage() {
+  const noPreferenceMembers = orderMembers.filter(m => !m.hasPreference);
+
+  // 全員の枠が確定していたら（希望なし組が0人）結果画面へ
+  if (currentOrderIndex >= noPreferenceMembers.length) {
+    showOrderFinalResult();
+    return;
+  }
+
+  const currentMember = noPreferenceMembers[currentOrderIndex];
+  document.getElementById('order-current-member').textContent =
+    `${currentMember.name}さんが回します`;
+
+  // 結果表示をリセットしてスピンボタンを有効に戻す
+  document.getElementById('order-result').classList.add('hidden');
+  document.getElementById('order-next-button').classList.add('hidden');
+  document.getElementById('order-spin-button').disabled = false;
+
+  // 残り枠をルーレットの項目として渡す
+  const items = remainingSlots.map(slot => ({ item: `${slot}番目`, weight: 1 }));
+  showPage('order-roulette-page');
+  drawOrderRouletteWheel(items, 0);
+}
+
+// 順番決めモード専用のルーレット描画（既存のdrawRouletteWheelと同じロジック）
+function drawOrderRouletteWheel(items, angle) {
+  const canvas = document.getElementById('order-roulette-canvas');
+  const ctx = canvas.getContext('2d');
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const radius = 180;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+    '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+    '#F8B739', '#52B788', '#E76F51', '#2A9D8F'
+  ];
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+  ctx.translate(-centerX, -centerY);
+
+  let currentAngle = 0;
+  items.forEach((item, index) => {
+    const sliceAngle = (item.weight / totalWeight) * 2 * Math.PI;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = colors[index % colors.length];
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(currentAngle + sliceAngle / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 15px Arial';
+    ctx.strokeText(item.item, radius - 10, 5);
+    ctx.fillText(item.item, radius - 10, 5);
+    ctx.restore();
+
+    currentAngle += sliceAngle;
+  });
+
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, 12, 0, 2 * Math.PI);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// 順番決めモードのルーレットを回す
+let isOrderSpinning = false;
+
+function spinOrderRoulette() {
+  if (isOrderSpinning) return;
+
+  isOrderSpinning = true;
+  document.getElementById('order-spin-button').disabled = true;
+  document.getElementById('order-result').classList.add('hidden');
+
+  const items = remainingSlots.map(slot => ({ item: `${slot}番目`, weight: 1 }));
+
+  // ランダムに結果を決定する
+  const randomIndex = Math.floor(Math.random() * items.length);
+  const result = items[randomIndex].item;
+  const resultSlot = remainingSlots[randomIndex];
+
+  // 結果のスライスが上のポインタに来るようアニメーションさせる
+  const totalWeight = items.length;
+  let accumulated = 0;
+  let targetAngleStart = 0;
+  let targetAngleEnd = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    const sliceAngle = (1 / totalWeight) * 2 * Math.PI;
+    if (i === randomIndex) {
+      targetAngleStart = accumulated;
+      targetAngleEnd = accumulated + sliceAngle;
+      break;
+    }
+    accumulated += sliceAngle;
+  }
+
+  const targetSliceCenter = (targetAngleStart + targetAngleEnd) / 2;
+  const stopAngle = -targetSliceCenter - Math.PI / 2;
+  const totalRotation = stopAngle + 2 * Math.PI * (5 + Math.floor(Math.random() * 3));
+
+  const duration = 4000;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const currentAngle = totalRotation * eased;
+
+    drawOrderRouletteWheel(items, currentAngle);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // アニメーション終了：結果を確定して表示する
+      document.getElementById('order-result-text').textContent = result;
+      document.getElementById('order-result').classList.remove('hidden');
+
+      // 決まった枠を残り枠から除く
+      remainingSlots = remainingSlots.filter(s => s !== resultSlot);
+
+      // 現在のメンバーの結果を finalOrder に記録する
+      const noPreferenceMembers = orderMembers.filter(m => !m.hasPreference);
+      finalOrder[resultSlot] = noPreferenceMembers[currentOrderIndex].name;
+
+      currentOrderIndex++;
+      isOrderSpinning = false;
+
+      // 次の人がいれば「次の人へ」ボタンを表示、いなければ結果画面へ
+      if (currentOrderIndex < noPreferenceMembers.length) {
+        document.getElementById('order-next-button').classList.remove('hidden');
+      } else {
+        // 少し間を置いてから結果画面へ遷移する
+        setTimeout(showOrderFinalResult, 1500);
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// 次の人のルーレット画面へ進む
+function nextOrderMember() {
+  showOrderRoulettePage();
+}
+
+// 全員分の結果を一覧表示する
+function showOrderFinalResult() {
+  const total = orderMembers.length;
+  const resultDiv = document.getElementById('order-final-result');
+
+  let html = '';
+  for (let i = 1; i <= total; i++) {
+    html += `
+      <div class="item-row">
+        <span class="item-weight" style="min-width:60px;">${i}番目</span>
+        <span class="item-name">${finalOrder[i]}</span>
+      </div>
+    `;
+  }
+  resultDiv.innerHTML = html;
+  showPage('order-result-page');
+}
+
+// やり直し：メンバー入力画面に戻る（データは保持する）
+function retryOrderMode() {
+  remainingSlots = [];
+  currentOrderIndex = 0;
+  finalOrder = {};
+  showPage('order-input-page');
+  displayOrderMembers(); // 入力済みメンバーはそのまま残す
+}
