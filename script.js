@@ -804,6 +804,14 @@ function spinOrderRoulette() {
       currentOrderIndex++;
       isOrderSpinning = false;
 
+      // 修正②：残り枠が1つになった場合、次の人の枠を消去法で自動確定する
+      if (remainingSlots.length === 1 && currentOrderIndex < noPreferenceMembers.length) {
+        // 残り1枠を次の人に自動割り当てする
+        finalOrder[remainingSlots[0]] = noPreferenceMembers[currentOrderIndex].name;
+        remainingSlots = [];
+        currentOrderIndex++;
+      }
+
       // 次の人がいれば「次の人へ」ボタンを表示、いなければ結果画面へ
       if (currentOrderIndex < noPreferenceMembers.length) {
         document.getElementById('order-next-button').classList.remove('hidden');
