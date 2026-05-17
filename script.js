@@ -520,6 +520,11 @@ function showOrderMode() {
 // モード選択に戻る（順番決めモード専用：未入力でも確認不要）
 function backToModeSelectFromOrder() {
   orderMembers = [];
+  // 修正③：ルーレット途中から戻る場合も含めて全データをリセットする
+  remainingSlots = [];
+  currentOrderIndex = 0;
+  finalOrder = {};
+  isOrderSpinning = false;
   showPage('mode-select');
 }
 
@@ -855,4 +860,14 @@ function retryOrderMode() {
   finalOrder = {};
   showPage('order-input-page');
   displayOrderMembers(); // 入力済みメンバーはそのまま残す
+}
+
+function backToOrderInput() {
+  // 進行状態だけリセットし、メンバー情報（名前・希望）は保持する
+  remainingSlots = [];
+  currentOrderIndex = 0;
+  finalOrder = {};
+  isOrderSpinning = false;
+  showPage('order-input-page');
+  displayOrderMembers(); // 保持したメンバー情報を再描画する
 }
